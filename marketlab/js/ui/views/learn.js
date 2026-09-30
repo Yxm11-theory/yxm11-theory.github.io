@@ -31,6 +31,47 @@ const SECTIONS = [
       <div class="example"><strong>Example:</strong> A company expected to lose $0.40 per share that loses only $0.10 has a positive surprise — its price may rise even though it lost money. A company expected to earn $2.00 that earns $1.80 may fall despite a healthy profit.</div>`,
   },
   {
+    id: 'l-prices',
+    title: 'How prices move in this model',
+    html: () => `<p>Each fictional stock’s price combines several simplified pieces:</p>
+      <ul>
+        <li><strong>Fair value from fundamentals.</strong> Expected profits, growth, debt, and interest rates set a baseline. Prices drift with it over time but can stay above or below it for long periods — nothing guarantees a return to any particular value.</li>
+        <li><strong>The whole market.</strong> A shared market factor moves most stocks together. Each company’s <em>beta</em> says how strongly it follows the market.</li>
+        <li><strong>Its sector.</strong> Companies in the same sector share extra ups and downs, so they move together more often than companies in different sectors.</li>
+        <li><strong>Company news.</strong> Product launches, contracts, recalls, and lawsuits cause occasional jumps.</li>
+        <li><strong>Changing volatility.</strong> Calm periods and stormy periods alternate; volatility tends to rise after sharp drops.</li>
+      </ul>
+      <p>Every news story is published on the same simulated day that prices react to it, so there is never a chance to trade before the market has absorbed the news.</p>`,
+  },
+  {
+    id: 'l-macro',
+    title: 'The economy, interest rates, and sectors',
+    html: () => `<p>The fictional Aurelian economy drifts gradually between expansions, overheating, recessions, and recoveries. Growth and inflation change slowly, and the fictional Aurelia Reserve Board adjusts interest rates every ${E.POLICY_EVERY} trading days.</p>
+      <ul>
+        <li><strong>Higher interest rates</strong> weigh most on utilities, real estate, and fast-growing companies (future profits are worth less today, and debt costs more). Banks and insurers tend to benefit.</li>
+        <li><strong>Inflation</strong> helps energy producers but squeezes companies that cannot raise prices.</li>
+        <li><strong>Recessions</strong> hit cyclical sectors (industrials, technology, energy, finance) harder than defensive ones (utilities, healthcare, household goods).</li>
+        <li><strong>Bull and bear markets</strong> emerge from these forces plus investor mood; the game labels a 20% fall from a recent high a bear market.</li>
+      </ul>
+      <p>Markets price what investors <em>expect</em>, so widely expected rate changes cause little reaction; surprises move prices.</p>`,
+  },
+  {
+    id: 'l-corp',
+    title: 'Dividends, stock splits, and bankruptcies',
+    html: () => `<ul>
+        <li><strong>Dividends.</strong> Each dividend is announced with the quarterly results and paid about 12 trading days later, on the <em>ex-dividend day</em>. If you hold shares at the close the day before, you receive the cash — and the share price drops by about the dividend that morning, so buying just for a dividend does not create free money.</li>
+        <li><strong>Stock splits.</strong> When a price gets very high, a company may split each share into several cheaper ones. Your number of shares multiplies, the price divides, and your total value and cost basis stay the same. Charts are adjusted so past prices stay comparable.</li>
+        <li><strong>Bankruptcies.</strong> A company that runs out of cash and cannot borrow or sell new shares goes bankrupt. Its shares are written off as a realized loss and it is delisted. This is rare, and it mostly threatens loss-making, heavily indebted companies.</li>
+      </ul>`,
+  },
+  {
+    id: 'l-costs',
+    title: 'Bid, ask, spreads, and slippage',
+    html: () => `<p>Every security has two prices: the <strong>bid</strong> (what buyers offer) and the <strong>ask</strong> (what sellers want). A market buy pays the ask and a market sell receives the bid; the gap is the <strong>spread</strong>. Spreads are wider for smaller, more volatile companies and during stormy markets.</p>
+      <p><strong>Slippage</strong> is the extra cost of a large order moving the price against you. In this model it grows with the square root of your order’s share of typical daily volume. Orders larger than 10% of typical daily volume are refused.</p>
+      <div class="example"><strong>Example:</strong> With a $50.00 mid price and a 0.20% spread, the bid is about $49.95 and the ask about $50.05. Buying and immediately selling 100 shares costs about $10 in spread alone. MarketLab charges no commissions, and it includes costs in your cost basis.</div>`,
+  },
+  {
     id: 'l-div',
     title: 'Diversification',
     html: () => `<p>Diversification means spreading money across different investments so one bad outcome doesn’t sink everything. MarketLab’s 30 companies sit in 8 sectors that react differently to the economy.</p>

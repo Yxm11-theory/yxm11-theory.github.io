@@ -81,7 +81,10 @@ export function render(ctx) {
       <h2 id="ru-h" style="margin-bottom:8px">Realized vs. unrealized</h2>
       <p class="small" style="color:var(--text-2)"><strong>Unrealized</strong> simulated gains (${E.formatSignedCents(sum.unrealized)}) are “on paper”: they change every day with fictional prices until you sell.</p>
       <p class="small" style="color:var(--text-2)"><strong>Realized</strong> simulated gains (${E.formatSignedCents(sum.realized)}) were locked in when you sold shares for more or less than your average purchase price.</p>
-      <p class="small muted">Realized + unrealized${sum.dividends ? ' + dividends' : ''} = your total simulated gains (${E.formatSignedCents(sum.gain)}).</p>
+      <p class="small" style="color:var(--text-2)"><strong>Dividends</strong> received so far: ${money(sum.dividends)} in virtual cash.</p>
+      <div class="kv-row"><span class="muted">Realized + unrealized + dividends</span><strong>${E.formatSignedCents(sum.realized + sum.unrealized + sum.dividends)}</strong></div>
+      <div class="kv-row"><span class="muted">Total simulated gains</span><strong>${E.formatSignedCents(sum.gain)}</strong></div>
+      <p class="hint">Execution costs paid so far (${money(sum.execCosts)} in spreads and slippage) are already included in these numbers, because they are part of each trade’s price.</p>
     </section>
   </div>`;
 }

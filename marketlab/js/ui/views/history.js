@@ -8,6 +8,10 @@ const TYPE_FILTERS = [
   ['all', 'All'],
   ['buy', 'Buys'],
   ['sell', 'Sells'],
+  ['dividend', 'Dividends'],
+  ['split', 'Splits'],
+  ['bankruptcy', 'Bankruptcies'],
+  ['order', 'Order updates'],
 ];
 
 export function filteredTransactions(ctx) {
@@ -28,13 +32,15 @@ export function render(ctx) {
         <td data-label="Shares" class="r">${t.shares != null ? t.shares.toLocaleString('en-US') : '—'}</td>
         <td data-label="Price" class="r">${t.priceCents != null ? money(t.priceCents) : '—'}</td>
         <td data-label="Total" class="r">${t.totalCents != null ? money(t.totalCents) : '—'}</td>
-        <td data-label="Realized simulated gain" class="r">${t.type === 'sell' ? gain(t.realizedCents) : '<span class="muted">—</span>'}</td>
-      </tr>`;
+        <td data-label="Execution costs" class="r">${t.costCents ? money(t.costCents) : '<span class="muted">—</span>'}</td>
+        <td data-label="Realized simulated gain" class="r">${t.type === 'sell' || t.type === 'bankruptcy' ? gain(t.realizedCents) : '<span class="muted">—</span>'}</td>
+      </tr>
+      ${t.note && t.type !== 'buy' && t.type !== 'sell' ? `<tr class="note-row"><td colspan="8" data-label="Note">${esc(t.note)}</td></tr>` : ''}`;
     })
     .join('');
   return `
   <div class="page-head">
-    <div><h1 tabindex="-1">Transaction history</h1><p>Every simulated trade you have made. No real orders were placed.</p></div>
+    <div><h1 tabindex="-1">Transaction history</h1><p>Every simulated trade, dividend, split, and write-off. No real orders were placed.</p></div>
     <button type="button" class="btn" data-action="export-csv" ${state.transactions.length ? '' : 'disabled'}>Download CSV</button>
   </div>
   <section class="card" aria-labelledby="tx-h">
@@ -42,7 +48,7 @@ export function render(ctx) {
     ${
       list.length
         ? `<div class="table-wrap"><table class="data stackable"><caption class="sr-only">Simulated transactions, newest first</caption>
-          <thead><tr><th scope="col">Day</th><th scope="col">Action</th><th scope="col">Security</th><th scope="col" class="r">Shares</th><th scope="col" class="r">Price</th><th scope="col" class="r">Total</th><th scope="col" class="r">Realized simulated gain</th></tr></thead>
+          <thead><tr><th scope="col">Day</th><th scope="col">Action</th><th scope="col">Security</th><th scope="col" class="r">Shares</th><th scope="col" class="r">Price</th><th scope="col" class="r">Total</th><th scope="col" class="r">Costs</th><th scope="col" class="r">Realized simulated gain</th></tr></thead>
           <tbody>${rows}</tbody></table></div>`
         : state.transactions.length
           ? emptyState('🔎', 'No records match', 'Try another filter.')

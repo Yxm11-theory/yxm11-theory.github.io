@@ -49,6 +49,7 @@ function fundamentalsCard(ctx, spec) {
       ${row('Payout ratio', m.payoutRatio == null ? '—' : pct(m.payoutRatio))}
       ${row('Beta (market sensitivity)', spec.beta.toFixed(2))}
       ${row('30-day volatility', `${(vol * 100).toFixed(2)}% / day · ${E.volatilityLabel(vol)}`)}
+      ${row('Financial health', healthLabel(cs.distress))}
       ${row('Avg. volume (20 days)', `${E.formatVolume(E.averageVolume(state, spec.id))} shares`)}
     </dl>
     <p class="hint" style="margin-top:12px">Fundamentals are invented and simplified. They influence prices over time in this model, but never guarantee where a price goes.</p>
@@ -89,7 +90,7 @@ function dividendCard(ctx, spec) {
   if (spec.payout === 0) policy = `${esc(spec.name)} does not pay a dividend; it reinvests profits in growth.`;
   else policy = `${esc(spec.name)} aims to pay about ${Math.round(spec.payout * 100)}% of earnings as dividends, raising them gradually and cutting them if earnings collapse.`;
   return `<section class="card" aria-labelledby="div-h">
-    <h2 id="div-h" style="margin-bottom:8px">Dividends</h2>
+    <h2 id="div-h" style="margin-bottom:8px">Dividends &amp; splits</h2>
     <p class="small" style="color:var(--text-2)">${policy}</p>
     <div class="kv-row"><span class="muted">Current quarterly dividend</span><strong>${cs.dps > 0 ? dollars2(cs.dps) + ' per share' : 'None'}</strong></div>
     <div class="kv-row"><span class="muted">Next ex-dividend day</span><strong>${cs.exDay && cs.exDay > ctx.state.day ? `Day ${cs.exDay}` : '—'}</strong></div>
@@ -100,6 +101,15 @@ function dividendCard(ctx, spec) {
           <tbody>${hist.map((d) => `<tr><td>Day ${d.day}</td><td class="r">${dollars2(d.dps)}</td></tr>`).join('')}</tbody></table></div>
           <p class="hint">History is adjusted for stock splits.</p>`
         : `<p class="hint">No dividends have been paid ${spec.payout > 0 ? 'yet' : ''}.</p>`
+    }
+    ${
+      cs.splits.length
+        ? `<h3 class="small muted" style="margin:12px 0 4px">Stock splits</h3><ul class="mini-list">${cs.splits
+            .slice()
+            .reverse()
+            .map((x) => `<li><span>Day ${x.day}</span><strong>${x.ratio}-for-1</strong></li>`)
+            .join('')}</ul>`
+        : ''
     }
   </section>`;
 }
@@ -135,7 +145,7 @@ function tradeCard(ctx, spec) {
             aria-describedby="qty-hint trade-msg" ${msg?.type === 'error' ? 'aria-invalid="true"' : ''}>
           <button type="button" class="btn qty-step" data-action="qty-step" data-delta="1" aria-label="Increase quantity by 1">+</button>
         </div>
-        <p class="hint" id="qty-hint" style="margin:6px 0 0">Whole shares only. Market orders fill immediately at the latest fictional price.</p>
+        <p class="hint" id="qty-hint" style="margin:6px 0 0">Whole shares only. Market orders fill immediately: buys at the ask, sells at the bid, plus a little slippage for larger orders.</p>
       </div>
       <div class="quick-qty" role="group" aria-label="Quick quantities">
         <button type="button" class="btn btn-sm" data-action="qty-set" data-value="1">1</button>
@@ -157,20 +167,39 @@ function tradeCard(ctx, spec) {
 
 export function estimateHtml(ctx, id, raw) {
   const { state } = ctx;
-  const price = E.currentPrice(state, id);
+  const q = E.quote(state, id);
   const parsed = E.parseQuantity(raw);
-  const qty = parsed.ok ? parsed.qty : 0;
-  const total = price * qty;
+  const head = `<div class="quote-line"><span>Bid <strong>${money(q.bid)}</strong></span><span>Ask <strong>${money(q.ask)}</strong></span><span class="muted">Spread ${(((q.ask - q.bid) / q.mid) * 100).toFixed(2)}%</span></div>`;
+  if (!parsed.ok) return head + '<p class="hint" style="margin:6px 0 0">Enter a whole number of shares to see estimated prices and costs.</p>';
+  const qty = parsed.qty;
+  const b = E.estimateMarketFill(state, id, 'buy', qty);
+  const se = E.estimateMarketFill(state, id, 'sell', qty);
   const owned = E.sharesOwned(state, id);
+  const avail = E.availableShares(state, id);
   const cash = E.availableCash(state);
-  const rows = [
-    ['Fictional price per share', money(price)],
-    ['Estimated total', parsed.ok ? money(total) : '—'],
-    ['Virtual cash available', money(cash)],
-    ['Virtual cash after buy', parsed.ok ? (total <= cash ? money(cash - total) : '<span class="neg">Not enough virtual cash</span>') : '—'],
-    ['Shares after sell', parsed.ok ? (qty <= owned ? (owned - qty).toLocaleString('en-US') : '<span class="neg">More than you own</span>') : '—'],
-  ];
-  return rows.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('');
+  const big = E.participationError(state, id, qty);
+  const cell = (v) => `<td class="r">${v}</td>`;
+  return `${head}
+    <table class="est-table"><caption class="sr-only">Estimated execution for ${qty} shares</caption>
+      <thead><tr><th scope="col"><span class="sr-only">Item</span></th><th scope="col" class="r">If you buy</th><th scope="col" class="r">If you sell</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Price per share</th>${cell(money(b.fill))}${cell(money(se.fill))}</tr>
+        <tr><th scope="row">Total</th>${cell(money(b.total))}${cell(money(se.total))}</tr>
+        <tr><th scope="row">Spread cost</th>${cell(money(b.spreadCost))}${cell(money(se.spreadCost))}</tr>
+        <tr><th scope="row">Slippage</th>${cell(money(b.slippage))}${cell(money(se.slippage))}</tr>
+        <tr class="est-total"><th scope="row">Execution costs</th>${cell(money(b.costs))}${cell(money(se.costs))}</tr>
+        <tr><th scope="row">Afterwards</th>${cell(b.total <= cash ? `${money(cash - b.total)} cash` : '<span class="neg">Not enough cash</span>')}${cell(qty <= avail ? `${(owned - qty).toLocaleString('en-US')} shares left` : '<span class="neg">More than you can sell</span>')}</tr>
+      </tbody>
+    </table>
+    ${big ? `<p class="neg small" style="margin:6px 0 0">${esc(big)}</p>` : ''}
+    <p class="hint" style="margin:6px 0 0">Virtual cash available: ${money(cash)}. Costs are estimates versus the mid price of ${money(q.mid)}; they are included in your cost basis.</p>`;
+}
+
+function healthLabel(d) {
+  if (d >= 0.7) return '<span class="neg">Severe distress</span>';
+  if (d >= 0.35) return '<span class="neg">Under pressure</span>';
+  if (d >= 0.1) return '<span class="warn-text">Watch</span>';
+  return '<span class="pos">Healthy</span>';
 }
 
 export function render(ctx, id) {
@@ -260,8 +289,8 @@ function doTrade(ctx, kind, id) {
   app.save();
   const text =
     kind === 'buy'
-      ? `Simulated buy complete: ${plural(res.qty, 'share')} of ${spec.ticker} at ${money(res.price)} for ${money(res.total)} in virtual cash.`
-      : `Simulated sell complete: ${plural(res.qty, 'share')} of ${spec.ticker} at ${money(res.price)} for ${money(res.total)}. Realized simulated gain: ${E.formatSignedCents(res.realized)}.`;
+      ? `Simulated buy complete: ${plural(res.qty, 'share')} of ${spec.ticker} at ${money(res.price)} for ${money(res.total)} in virtual cash, including ${money(res.costs)} of execution costs.`
+      : `Simulated sell complete: ${plural(res.qty, 'share')} of ${spec.ticker} at ${money(res.price)} for ${money(res.total)} after ${money(res.costs)} of execution costs. Realized simulated gain: ${E.formatSignedCents(res.realized)}.`;
   ui.tradeMsg = { id, type: 'success', text };
   app.render();
   announce(text);

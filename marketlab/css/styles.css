@@ -598,3 +598,15 @@ dialog { width: min(560px, calc(100vw - 32px)); }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 h1[tabindex="-1"]:focus { outline: none; }
+.quote-line { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; font-size: 0.92rem; margin-bottom: 6px; }
+.est-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+.est-table th, .est-table td { padding: 4px 0; border-bottom: 1px solid rgba(37, 50, 75, 0.5); }
+.est-table thead th { color: var(--muted); font-weight: 650; font-size: 0.78rem; }
+.est-table tbody th { text-align: left; font-weight: 500; color: var(--text-2); }
+.est-table .r { text-align: right; padding-left: 10px; }
+.est-table .est-total th, .est-table .est-total td { font-weight: 750; color: var(--text); }
+.warn-text { color: #fcd34d; }
+tr.note-row td { font-size: 0.82rem; color: var(--muted); padding-top: 0; }
+@media (max-width: 720px) {
+  table.data.stackable tr.note-row { border-top: 0; margin-top: -12px; border-top-left-radius: 0; border-top-right-radius: 0; }
+}
