@@ -58,7 +58,9 @@
       <nav class="tabs" aria-label="Main">
         <div class="tabs-inner">
           <a href="#/" data-route="dashboard">Dashboard</a>
+          <a href="#/markets" data-route="markets">Markets</a>
           <a href="#/portfolio" data-route="portfolio">Portfolio</a>
+          <a href="#/calendar" data-route="calendar">Calendar</a>
           <a href="#/history" data-route="history">Transactions</a>
           <a href="#/news" data-route="news">News</a>
           <a href="#/challenges" data-route="challenges">Challenges</a>
@@ -74,9 +76,10 @@
     <footer class="site-footer">
       <div class="footer-inner">
         <p class="footer-disclaimer"><strong>SIMULATION ONLY.</strong> All money, companies, prices, and news are fictional. No real trades occur. Virtual funds have no monetary value and cannot be withdrawn. This is not investment advice. Simulated success does not predict real investment returns.</p>
-        <p class="footer-meta">MarketLab is an original educational game. Its companies, tickers (ending in “.SIM”), economy, and news are invented and are not affiliated with any real company, exchange, or brokerage. There are no deposits, withdrawals, payments, or prizes. Progress is saved only in this browser.</p>
+        <p class="footer-meta">MarketLab is an original educational game. Its companies, tickers (ending in “.SIM”), funds, economy, and news are invented, its market behavior is a simplified model, and are not affiliated with any real company, exchange, or brokerage. There are no deposits, withdrawals, payments, or prizes. Progress is saved only in this browser.</p>
         <div class="footer-actions">
           <span class="save-status" id="save-status" aria-live="polite">Progress saves automatically in this browser.</span>
+          <span class="seed-info" id="seed-info"></span>
           <button type="button" class="btn btn-danger-ghost" id="reset-btn">Reset simulation…</button>
         </div>
       </div>
@@ -96,14 +99,32 @@
       </div>
       <ul class="intro-list">
         <li>You start with <strong>$10,000 in virtual cash</strong> — play money that exists only in this game.</li>
-        <li>Trade whole shares of <strong>five invented companies</strong> in technology, energy, healthcare, retail, and aerospace.</li>
-        <li>Click <strong>Next Day</strong> to move the fictional market forward. Prices react to company news, sector conditions, the economy, and chance.</li>
+        <li>Trade whole shares of <strong>30 invented companies</strong> across 8 sectors, each with its own fictional revenue, profits, debt, and dividends.</li>
+        <li>Click <strong>Next Day</strong> to move the fictional market forward. Prices come from a <strong>simplified model</strong> of company results, the economy, and chance. It does not predict real markets, and no strategy is guaranteed to win.</li>
         <li>Nothing here connects to a bank or brokerage. There are no deposits, withdrawals, payments, or prizes, and simulated success does not predict real investment returns.</li>
       </ul>
       <button type="button" class="btn btn-primary btn-lg" id="start-btn">Start simulation</button>
       <p class="intro-foot">Progress is saved in this browser only. No account or login needed.</p>
     </section>
   </div>
+
+  <!-- Save upgrade notice -->
+  <dialog id="migrate-dialog" aria-labelledby="migrate-title">
+    <form method="dialog" class="dialog-body">
+      <h2 id="migrate-title">Your saved game was upgraded</h2>
+      <p>MarketLab now has 30 fictional companies, company fundamentals, and a new economy model. Your saved game from Day <span id="migrate-day">0</span> was carried over:</p>
+      <ul class="dialog-list">
+        <li><strong>Kept:</strong> virtual cash, holdings, average purchase prices, transactions, completed challenges, your watchlist, past news, and the price history of the original five companies.</li>
+        <li><strong>Added:</strong> 25 new fictional companies with generated history. Pebblecart now belongs to Consumer goods and Skyforge to Industrials.</li>
+        <li><strong>Restarted:</strong> the fictional economy, which now follows the new model from today onward.</li>
+      </ul>
+      <p>If you prefer a clean start with the new market, you can reset instead. Nothing is erased unless you confirm.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn" value="reset">Start a new game instead…</button>
+        <button type="submit" class="btn btn-primary" value="keep" autofocus>Continue my saved game</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- Reset confirmation -->
   <dialog id="reset-dialog" aria-labelledby="reset-title">
