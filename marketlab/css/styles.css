@@ -477,6 +477,59 @@ dialog::backdrop { background: rgba(5, 8, 15, 0.75); }
 @keyframes toastOut { to { opacity: 0; transform: translateY(10px); } }
 .noscript { padding: 20px; text-align: center; }
 
+/* ---------- Stage-2 components: markets, fundamentals, calendar ---------- */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.search { flex: 1 1 240px; min-width: 0; }
+.search input { width: 100%; }
+input[type="search"] {
+  background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  min-height: 42px; padding: 8px 12px;
+}
+.sort { display: flex; align-items: center; gap: 8px; }
+.markets-table td { padding-top: 9px; padding-bottom: 9px; }
+.markets-table .sparkline { vertical-align: middle; }
+tr.is-delisted td { opacity: 0.6; }
+.badge-danger {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  color: #fecaca; background: var(--neg-bg); border: 1px solid rgba(248, 113, 113, 0.5); border-radius: 999px; padding: 1px 7px;
+}
+.co-mark.sm { width: 26px; height: 26px; font-size: 0.66rem; border-radius: 7px; }
+.mini-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.mini-list li { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid rgba(37, 50, 75, 0.55); }
+.mini-list li:last-child { border-bottom: 0; }
+.mini-list li > :nth-child(2) { margin-left: auto; }
+.mini-name { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; }
+.mini-name .co-name { font-size: 0.93rem; }
+.movers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.movers h3 { margin-bottom: 4px; }
+.facts-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hint-inline { font-weight: 400; color: var(--muted); }
+.kv-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 0.93rem; }
+.kv-row strong { font-variant-numeric: tabular-nums; text-align: right; }
+.compact-table td, .compact-table th { padding: 7px 8px; font-size: 0.88rem; }
+.notice-box {
+  border: 1px solid var(--border-strong); background: var(--surface-2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; color: var(--text-2);
+}
+.notice-box.danger { border-color: rgba(248, 113, 113, 0.55); background: var(--neg-bg); color: #fecaca; }
+.notice-box.warn { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
+.cal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.cal-day { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.tag-kind { font-size: 0.72rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: rgba(124, 156, 255, 0.16); color: var(--accent-2); white-space: nowrap; }
+.tag-kind.div { background: rgba(45, 212, 191, 0.14); color: #5eead4; }
+.toc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.toc a { font-size: 0.92rem; }
+.chart-vol rect { fill: rgba(141, 156, 181, 0.32); }
+.chart-line-2 { stroke-width: 2; }
+.chart-line-2.dashed { stroke-dasharray: 6 5; }
+.tip-series { color: var(--text-2); }
+.tip-series i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.phase-boom { color: #86efac; border-color: rgba(134, 239, 172, 0.35); }
+.phase-inflation { color: #fdba74; border-color: rgba(253, 186, 116, 0.45); }
+.seed-info { font-size: 0.8rem; color: var(--muted); font-family: var(--mono); }
+.dialog-list { padding-left: 1.2em; color: var(--text-2); display: grid; gap: 6px; margin: 0 0 12px; }
+.dialog-body { max-height: calc(100vh - 40px); overflow-y: auto; }
+dialog { width: min(560px, calc(100vw - 32px)); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -505,6 +558,9 @@ dialog::backdrop { background: rgba(5, 8, 15, 0.75); }
   .ch-list { grid-template-columns: minmax(0, 1fr); }
   .co-row { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; }
   .co-row .sparkline { display: none; }
+  .hide-sm { display: none !important; }
+  .facts-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .movers { grid-template-columns: minmax(0, 1fr); }
   .card { padding: 14px; }
   main { padding-top: 16px; }
   .co-hero-price { margin-left: 0; text-align: left; width: 100%; }
@@ -519,6 +575,13 @@ dialog::backdrop { background: rgba(5, 8, 15, 0.75); }
   table.data.stackable td.cell-first::before { content: none; }
   table.data.stackable td.cell-first { justify-content: flex-start; }
   table.data.stackable tfoot tr { background: var(--surface-2); }
+  /* Markets: two-column number grid per company card */
+  table.markets-table.stackable tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
+  table.markets-table.stackable td { display: block; text-align: left; border-bottom: 0; padding: 4px 0; }
+  table.markets-table.stackable td::before { display: block; font-size: 0.72rem; }
+  table.markets-table.stackable td.cell-first { grid-column: 1 / -1; padding: 6px 0 8px; border-bottom: 1px solid rgba(37, 50, 75, 0.5); margin-bottom: 4px; }
+  table.markets-table.stackable td[data-label="Watch"] { display: flex; align-items: center; justify-content: space-between; }
+  table.markets-table.stackable td[data-label="Watch"]::before { display: inline; }
 }
 @media (max-width: 420px) {
   .sim-banner p { font-size: 0.9rem; }
@@ -527,9 +590,11 @@ dialog::backdrop { background: rgba(5, 8, 15, 0.75); }
   .stat-value { font-size: 1.25rem; }
   .position-box { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .facts { grid-template-columns: minmax(0, 1fr); }
+  .facts.facts-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .co-row .co-price .chg { font-size: 0.78rem; padding: 1px 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+h1[tabindex="-1"]:focus { outline: none; }

@@ -1,4 +1,5 @@
-// Lightweight interactive SVG line charts and sparklines (no dependencies).
+// Lightweight interactive SVG charts (no dependencies): multi-series lines, optional volume bars,
+// event markers, pointer/touch/keyboard inspection, and sparklines.
 
 const observers = new Set();
 
@@ -17,11 +18,13 @@ function niceStep(range, count) {
 
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+const compactNum = (v) => (v >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(1) + 'K' : String(Math.round(v)));
 
 /**
  * Render an interactive line chart.
- * opts: points [{day, value}], label, formatValue, formatAxis, markers [{day, tone, text}],
- *       height, emptyText, baseline (optional horizontal reference value)
+ * opts: series [{points:[{day,value}], label, color?, dashed?}] (or points + label for one series),
+ *       formatValue, formatAxis, markers [{day, tone, text}], volumes [{day, value}], baseline,
+ *       height, emptyText, label
  */
 export function lineChart(container, opts) {
   const draw = () => drawChart(container, opts);
@@ -38,19 +41,26 @@ export function lineChart(container, opts) {
 }
 
 function drawChart(container, opts) {
-  const { points, label, formatValue, formatAxis = formatValue, markers = [], emptyText, baseline } = opts;
+  const series = opts.series || [{ points: opts.points, label: opts.label }];
+  const { label, formatValue, formatAxis = formatValue, markers = [], emptyText, baseline, volumes } = opts;
+  const main = series[0].points;
   container.classList.add('chart');
-  if (!points || points.length < 2) {
+  if (!main || main.length < 2) {
     container.innerHTML = `<div class="chart-empty">${esc(emptyText || 'Not enough data to chart yet.')}</div>`;
     return;
   }
   const width = Math.max(260, container.clientWidth || 600);
-  const height = opts.height || (width < 520 ? 220 : 280);
-  const pad = { top: 14, right: 12, bottom: 28, left: width < 520 ? 50 : 62 };
+  const height = opts.height || (width < 520 ? 230 : 290);
+  const volH = volumes ? Math.round((height - 42) * 0.2) : 0;
+  const pad = { top: 14, right: 12, bottom: 28 + volH, left: width < 520 ? 52 : 64 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
 
-  const values = points.map((p) => p.value);
+  const n = main.length;
+  const days = main.map((p) => p.day);
+  const lookups = series.map((s) => new Map(s.points.map((p) => [p.day, p.value])));
+  const values = [];
+  lookups.forEach((m) => days.forEach((d) => m.has(d) && values.push(m.get(d))));
   if (baseline != null) values.push(baseline);
   let min = Math.min(...values);
   let max = Math.max(...values);
@@ -65,39 +75,83 @@ function drawChart(container, opts) {
   const ticks = [];
   for (let t = Math.ceil(min / step) * step; t <= max; t += step) ticks.push(t);
 
-  const n = points.length;
-  const x = (i) => pad.left + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const x = (i) => pad.left + (i / (n - 1)) * plotW;
   const y = (v) => pad.top + (1 - (v - min) / (max - min)) * plotH;
-
-  const first = points[0].value;
-  const last = points[n - 1].value;
+  const first = main[0].value;
+  const last = main[n - 1].value;
   const trend = last > first ? 'up' : last < first ? 'down' : 'flat';
   const gradId = `g${Math.random().toString(36).slice(2, 8)}`;
 
-  const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('');
-  const area = `${line}L${x(n - 1).toFixed(1)},${(pad.top + plotH).toFixed(1)}L${x(0).toFixed(1)},${(pad.top + plotH).toFixed(1)}Z`;
+  const pathFor = (m) => {
+    let d = '';
+    let pen = false;
+    days.forEach((day, i) => {
+      if (!m.has(day)) {
+        pen = false;
+        return;
+      }
+      d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(m.get(day)).toFixed(1)}`;
+      pen = true;
+    });
+    return d;
+  };
+  const mainPath = pathFor(lookups[0]);
+  const area = `${mainPath}L${x(n - 1).toFixed(1)},${(pad.top + plotH).toFixed(1)}L${x(0).toFixed(1)},${(pad.top + plotH).toFixed(1)}Z`;
+
+  let volSvg = '';
+  let volMap = null;
+  if (volumes) {
+    volMap = new Map(volumes.map((v) => [v.day, v.value]));
+    const vmax = Math.max(1, ...days.map((d) => volMap.get(d) || 0));
+    const bw = Math.max(1, plotW / n - 1);
+    const base = height - 28;
+    volSvg = `<g class="chart-vol" aria-hidden="true">${days
+      .map((d, i) => {
+        const v = volMap.get(d) || 0;
+        const h = (v / vmax) * (volH - 4);
+        return `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${(base - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"/>`;
+      })
+      .join('')}</g>`;
+  }
 
   const xTickCount = width < 520 ? 3 : 5;
   const xTicks = [];
   for (let k = 0; k <= xTickCount; k++) xTicks.push(Math.round((k / xTickCount) * (n - 1)));
 
-  const dayIndex = new Map(points.map((p, i) => [p.day, i]));
+  const dayIndex = new Map(days.map((d, i) => [d, i]));
   const markerByIndex = new Map();
   for (const m of markers) {
     const i = dayIndex.get(m.day);
-    if (i == null) continue;
+    if (i == null || !lookups[0].has(m.day)) continue;
     if (!markerByIndex.has(i)) markerByIndex.set(i, []);
     markerByIndex.get(i).push(m);
   }
 
-  const summary = `${label}. ${n} days from Day ${points[0].day} to Day ${points[n - 1].day}. Starts at ${formatValue(first)}, ends at ${formatValue(last)}, low ${formatValue(Math.min(...points.map((p) => p.value)))}, high ${formatValue(Math.max(...points.map((p) => p.value)))}. Use left and right arrow keys to inspect days.`;
+  const mainVals = main.map((p) => p.value);
+  const summary =
+    `${label || series[0].label}. ${n} days from Day ${days[0]} to Day ${days[n - 1]}. ` +
+    series
+      .map((s, k) => {
+        const vs = days.filter((d) => lookups[k].has(d)).map((d) => lookups[k].get(d));
+        return vs.length ? `${s.label}: starts ${formatValue(vs[0])}, ends ${formatValue(vs[vs.length - 1])}` : '';
+      })
+      .join('. ') +
+    `. Low ${formatValue(Math.min(...mainVals))}, high ${formatValue(Math.max(...mainVals))}. Use left and right arrow keys to inspect days.`;
+
+  const seriesSvg = series
+    .map((s, k) =>
+      k === 0
+        ? `<path class="chart-line" d="${mainPath}" aria-hidden="true" ${s.color ? `style="stroke:${s.color}"` : ''}/>`
+        : `<path class="chart-line chart-line-2 ${s.dashed ? 'dashed' : ''}" d="${pathFor(lookups[k])}" style="stroke:${s.color || 'var(--accent)'}" aria-hidden="true"/>`,
+    )
+    .join('');
 
   container.innerHTML = `
     <svg class="chart-svg trend-${trend}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"
          tabindex="0" role="img" aria-label="${esc(summary)}">
       <defs>
         <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="currentColor" stop-opacity="0.28"/>
+          <stop offset="0%" stop-color="currentColor" stop-opacity="${series.length > 1 ? 0.12 : 0.26}"/>
           <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
         </linearGradient>
       </defs>
@@ -109,27 +163,27 @@ function drawChart(container, opts) {
           )
           .join('')}
         ${xTicks
-          .map(
-            (i) => `<text x="${x(i).toFixed(1)}" y="${height - 8}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">Day ${points[i].day}</text>`,
-          )
+          .map((i) => `<text x="${x(i).toFixed(1)}" y="${height - 8}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">Day ${days[i]}</text>`)
           .join('')}
       </g>
+      ${volSvg}
       ${baseline != null ? `<line class="chart-baseline" aria-hidden="true" x1="${pad.left}" x2="${width - pad.right}" y1="${y(baseline).toFixed(1)}" y2="${y(baseline).toFixed(1)}"/>` : ''}
       <path class="chart-area" d="${area}" fill="url(#${gradId})" aria-hidden="true"/>
-      <path class="chart-line" d="${line}" aria-hidden="true"/>
+      ${seriesSvg}
       <g aria-hidden="true">
         ${[...markerByIndex.entries()]
           .map(([i, ms]) => {
-            const tone = ms.some((m) => m.tone === 'negative') ? (ms.some((m) => m.tone === 'positive') ? 'neutral' : 'negative') : ms[0].tone;
-            return `<circle class="chart-marker tone-${tone}" cx="${x(i).toFixed(1)}" cy="${y(points[i].value).toFixed(1)}" r="4.5"/>`;
+            const tones = new Set(ms.map((m) => m.tone));
+            const t = tones.size > 1 ? 'neutral' : ms[0].tone;
+            return `<circle class="chart-marker tone-${t}" cx="${x(i).toFixed(1)}" cy="${y(lookups[0].get(days[i])).toFixed(1)}" r="4.5"/>`;
           })
           .join('')}
       </g>
       <g class="chart-cursor" aria-hidden="true" style="display:none">
-        <line class="chart-cross" y1="${pad.top}" y2="${pad.top + plotH}"/>
+        <line class="chart-cross" y1="${pad.top}" y2="${height - 28}"/>
         <circle class="chart-dot" r="5"/>
       </g>
-      <rect class="chart-hit" x="${pad.left}" y="${pad.top}" width="${plotW}" height="${plotH}" fill="transparent"/>
+      <rect class="chart-hit" x="${pad.left}" y="${pad.top}" width="${plotW}" height="${height - 28 - pad.top}" fill="transparent"/>
     </svg>
     <div class="chart-tip" role="status" aria-live="polite" hidden></div>`;
 
@@ -142,18 +196,25 @@ function drawChart(container, opts) {
 
   const show = (i) => {
     active = Math.max(0, Math.min(n - 1, i));
-    const p = points[active];
+    const day = days[active];
+    const v0 = lookups[0].get(day);
     const cx = x(active);
-    const cy = y(p.value);
+    const cy = y(v0);
     cursor.style.display = '';
     cross.setAttribute('x1', cx);
     cross.setAttribute('x2', cx);
     dot.setAttribute('cx', cx);
     dot.setAttribute('cy', cy);
-    const change = first ? (p.value - first) / first : 0;
+    const change = first ? v0 / first - 1 : 0;
     const ms = markerByIndex.get(active) || [];
-    tip.innerHTML = `<strong>Day ${p.day}</strong><span class="tip-value">${esc(formatValue(p.value))}</span>
+    const extra = series
+      .slice(1)
+      .map((s, k) => (lookups[k + 1].has(day) ? `<span class="tip-series"><i style="background:${s.color || 'var(--accent)'}"></i>${esc(s.label)}: ${esc(formatValue(lookups[k + 1].get(day)))}</span>` : ''))
+      .join('');
+    tip.innerHTML = `<strong>Day ${day}</strong><span class="tip-value">${series.length > 1 ? `${esc(series[0].label)}: ` : ''}${esc(formatValue(v0))}</span>
       <span class="tip-change ${change >= 0 ? 'pos' : 'neg'}">${change >= 0 ? '▲' : '▼'} ${Math.abs(change * 100).toFixed(2)}% vs. range start</span>
+      ${extra}
+      ${volMap ? `<span class="tip-series">Volume: ${compactNum(volMap.get(day) || 0)} shares</span>` : ''}
       ${ms.map((m) => `<span class="tip-event tone-${m.tone}">Fictional event: ${esc(m.text)}</span>`).join('')}`;
     tip.hidden = false;
     const tipW = tip.offsetWidth;

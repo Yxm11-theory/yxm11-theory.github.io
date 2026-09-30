@@ -5,5 +5,6 @@
   "scripts": {
     "test": "node --test marketlab/tests/*.test.mjs",
     "serve": "python3 -m http.server 8000"
-  }
+  },
+  "type": "module"
 }
