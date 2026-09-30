@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MarketLab — Fictional Stock Market Simulator</title>
+  <meta name="description" content="MarketLab is a fictional, educational stock market simulator. SIMULATION ONLY: all money, companies, prices, and news are fictional. Not investment advice.">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c9cff'/%3E%3Cpath d='M6 22l6-7 5 4 9-10' stroke='%230b0f19' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <div id="app">
+    <div class="sim-banner" role="note" aria-label="Simulation notice">
+      <div class="sim-banner-inner">
+        <span class="sim-banner-icon" aria-hidden="true">⚠</span>
+        <p><strong>SIMULATION ONLY.</strong> All money, companies, prices, and news are fictional. No real trades occur. Virtual funds have no monetary value and cannot be withdrawn. This is not investment advice.</p>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#/" aria-label="MarketLab dashboard">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="32" height="32"><rect width="32" height="32" rx="8"/><path d="M6 22l6-7 5 4 9-10"/></svg>
+          </span>
+          <span class="brand-text">
+            <span class="brand-name">MarketLab</span>
+            <span class="brand-sub">Fictional simulator</span>
+          </span>
+        </a>
+        <span class="sim-chip" title="Everything in MarketLab is fictional">Simulation only</span>
+
+        <div class="market-controls" role="group" aria-label="Market controls">
+          <div class="day-display" id="day-display" aria-live="off">
+            <span class="day-num">Day 0</span>
+            <span class="phase-badge">Expansion</span>
+          </div>
+          <button type="button" class="btn btn-primary" id="next-day">
+            <span aria-hidden="true">⏭</span> Next Day
+          </button>
+          <button type="button" class="btn" id="autoplay" aria-pressed="false">
+            <span class="autoplay-icon" aria-hidden="true">▶</span> <span class="autoplay-label">Autoplay</span>
+          </button>
+          <label class="speed">
+            <span class="sr-only">Autoplay speed</span>
+            <select id="speed">
+              <option value="2000">Slow</option>
+              <option value="1000" selected>Normal</option>
+              <option value="450">Fast</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Main">
+        <div class="tabs-inner">
+          <a href="#/" data-route="dashboard">Dashboard</a>
+          <a href="#/portfolio" data-route="portfolio">Portfolio</a>
+          <a href="#/history" data-route="history">Transactions</a>
+          <a href="#/news" data-route="news">News</a>
+          <a href="#/challenges" data-route="challenges">Challenges</a>
+          <a href="#/learn" data-route="learn">Learn</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div id="view"></div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p class="footer-disclaimer"><strong>SIMULATION ONLY.</strong> All money, companies, prices, and news are fictional. No real trades occur. Virtual funds have no monetary value and cannot be withdrawn. This is not investment advice. Simulated success does not predict real investment returns.</p>
+        <p class="footer-meta">MarketLab is an original educational game. Its companies, tickers (ending in “.SIM”), economy, and news are invented and are not affiliated with any real company, exchange, or brokerage. There are no deposits, withdrawals, payments, or prizes. Progress is saved only in this browser.</p>
+        <div class="footer-actions">
+          <span class="save-status" id="save-status" aria-live="polite">Progress saves automatically in this browser.</span>
+          <button type="button" class="btn btn-danger-ghost" id="reset-btn">Reset simulation…</button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- First-run explanation -->
+  <div class="intro-backdrop" id="intro" hidden>
+    <section class="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" aria-describedby="intro-notice">
+      <div class="intro-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="44" height="44"><rect width="32" height="32" rx="8"/><path d="M6 22l6-7 5 4 9-10"/></svg>
+      </div>
+      <p class="eyebrow">Fictional educational simulator</p>
+      <h1 id="intro-title">Welcome to MarketLab</h1>
+      <div class="intro-notice" id="intro-notice">
+        <strong>SIMULATION ONLY.</strong> All money, companies, prices, and news are fictional. No real trades occur. Virtual funds have no monetary value and cannot be withdrawn. This is not investment advice.
+      </div>
+      <ul class="intro-list">
+        <li>You start with <strong>$10,000 in virtual cash</strong> — play money that exists only in this game.</li>
+        <li>Trade whole shares of <strong>five invented companies</strong> in technology, energy, healthcare, retail, and aerospace.</li>
+        <li>Click <strong>Next Day</strong> to move the fictional market forward. Prices react to company news, sector conditions, the economy, and chance.</li>
+        <li>Nothing here connects to a bank or brokerage. There are no deposits, withdrawals, payments, or prizes, and simulated success does not predict real investment returns.</li>
+      </ul>
+      <button type="button" class="btn btn-primary btn-lg" id="start-btn">Start simulation</button>
+      <p class="intro-foot">Progress is saved in this browser only. No account or login needed.</p>
+    </section>
+  </div>
+
+  <!-- Reset confirmation -->
+  <dialog id="reset-dialog" aria-labelledby="reset-title">
+    <form method="dialog" class="dialog-body">
+      <h2 id="reset-title">Reset the simulation?</h2>
+      <p>This permanently erases your virtual cash, holdings, market history, transactions, and completed challenges from this browser, then starts a brand-new fictional market.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn" value="cancel" autofocus>Cancel</button>
+        <button type="submit" class="btn btn-danger" value="confirm">Yes, reset everything</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+  <div class="sr-only" id="sr-status" aria-live="polite"></div>
+
+  <noscript><p class="noscript">MarketLab needs JavaScript to run the fictional market simulation.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
